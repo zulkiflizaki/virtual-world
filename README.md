@@ -1,7 +1,5 @@
 # **A Virtual World**
 
-## **A Virtual World**
-
 "A Virtual World" is a standalone course that constructs a virtual environment entirely from the ground up. The project is developed using basic HTML, CSS, and JavaScript to craft this world where self-driving cars can roam freely. The primary focus will be on generating this dynamic world, with the integration of self-driving car code coming at the end.
 
 ## **Introduction**
