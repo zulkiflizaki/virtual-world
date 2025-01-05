@@ -36,7 +36,7 @@ class World {
     this.trees = this.#generateTrees();
   }
 
-  #generateTrees(count = 10) {
+  #generateTrees() {
     const points = [
       ...this.roadBorders.map((segment) => [segment.p1, segment.p2]).flat(),
       ...this.buildings.map((building) => building.points).flat(),
@@ -52,23 +52,53 @@ class World {
     ];
 
     const trees = [];
-    while (trees.length < count) {
+    let tryCount = 0;
+
+    while (tryCount < 100) {
       const point = new Point(
         linearInterpolation(left, right, Math.random()),
         linearInterpolation(top, bottom, Math.random())
       );
 
+      // check if tree is inside or nearby a building or too close to a road
       let keep = true;
       for (const polygon of illegalPolygons) {
-        if (polygon.containsPoint(point)) {
+        if (
+          polygon.containsPoint(point) ||
+          polygon.distanceToPoint(point) < this.treeSize / 2
+        ) {
           keep = false;
           break;
         }
       }
 
+      // check if tree is too close to another tree
+      if (keep) {
+        for (const tree of trees) {
+          if (distance(tree, point) < this.treeSize) {
+            keep = false;
+            break;
+          }
+        }
+      }
+
+      // avoid trees to be generated in the middle of nowhere
+      if (keep) {
+        let closeToSomething = false;
+        for (const polygon of illegalPolygons) {
+          if (polygon.distanceToPoint(point) < this.treeSize * 2) {
+            closeToSomething = true;
+            break;
+          }
+        }
+        keep = closeToSomething;
+      }
+
       if (keep) {
         trees.push(point);
+        tryCount = 0;
       }
+      tryCount++;
     }
     return trees;
   }
@@ -122,7 +152,10 @@ class World {
 
     for (let i = 0; i < bases.length - 1; i++) {
       for (let j = i + 1; j < bases.length; j++) {
-        if (bases[i].intersectsPolygon(bases[j])) {
+        if (
+          bases[i].intersectsPolygon(bases[j]) ||
+          bases[i].distanceToPolygon(bases[j]) < this.spacing
+        ) {
           bases.splice(j, 1);
           j--;
         }
