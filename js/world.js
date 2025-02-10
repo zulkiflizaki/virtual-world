@@ -39,7 +39,7 @@ class World {
   #generateTrees() {
     const points = [
       ...this.roadBorders.map((segment) => [segment.p1, segment.p2]).flat(),
-      ...this.buildings.map((building) => building.points).flat(),
+      ...this.buildings.map((building) => building.base.points).flat(),
     ];
     const left = Math.min(...points.map((point) => point.x));
     const right = Math.max(...points.map((point) => point.x));
@@ -47,7 +47,7 @@ class World {
     const top = Math.max(...points.map((point) => point.y));
 
     const illegalPolygons = [
-      ...this.buildings,
+      ...this.buildings.map((building) => building.base),
       ...this.envelopes.map((e) => e.polygon),
     ];
 
@@ -75,7 +75,7 @@ class World {
       // check if tree is too close to another tree
       if (keep) {
         for (const tree of trees) {
-          if (distance(tree, point) < this.treeSize) {
+          if (distance(tree.center, point) < this.treeSize) {
             keep = false;
             break;
           }
@@ -95,7 +95,7 @@ class World {
       }
 
       if (keep) {
-        trees.push(point);
+        trees.push(new Tree(point, this.treeSize));
         tryCount = 0;
       }
       tryCount++;
@@ -150,22 +150,23 @@ class World {
       bases.push(new Envelope(segment, this.buildingWidth).polygon);
     }
 
+    const epsilon = 0.001;
+
     for (let i = 0; i < bases.length - 1; i++) {
       for (let j = i + 1; j < bases.length; j++) {
         if (
           bases[i].intersectsPolygon(bases[j]) ||
-          bases[i].distanceToPolygon(bases[j]) < this.spacing
+          bases[i].distanceToPolygon(bases[j]) < this.spacing - epsilon
         ) {
           bases.splice(j, 1);
           j--;
         }
       }
     }
-
-    return bases;
+    return bases.map((building) => new Building(building));
   }
 
-  draw(ctx) {
+  draw(ctx, viewPoint) {
     for (const envelope of this.envelopes) {
       envelope.draw(ctx, { fill: "#BBB", stroke: "#BBB", lineWidth: 15 });
     }
@@ -175,11 +176,14 @@ class World {
     for (const segment of this.roadBorders) {
       segment.draw(ctx, { color: "white", width: 4 });
     }
-    for (const tree of this.trees) {
-      tree.draw(ctx, { size: this.treeSize, color: "#rgba(0,0,0,0.5)" });
-    }
-    for (const building of this.buildings) {
-      building.draw(ctx);
+
+    const items = [...this.buildings, ...this.trees];
+    items.sort(
+      (a, b) =>
+        b.base.distanceToPoint(viewPoint) - a.base.distanceToPoint(viewPoint)
+    );
+    for (const item of items) {
+      item.draw(ctx, viewPoint);
     }
   }
 }

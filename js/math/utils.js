@@ -79,6 +79,13 @@ function linearInterpolation(a, b, t) {
   return a + (b - a) * t;
 }
 
+function linearInterpolation2D(a, b, t) {
+  return new Point(
+    linearInterpolation(a.x, b.x, t),
+    linearInterpolation(a.y, b.y, t)
+  );
+}
+
 function getRandomColor() {
   const hue = 290 + Math.random() * 260;
   return "hsl(" + hue + ", 100%, 60%)";
